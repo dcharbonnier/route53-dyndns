@@ -10,7 +10,8 @@ import re
 from re import search
 import socket
 import sys
-from urllib2 import urlopen
+import urllib2
+import contextlib
 
 parser = OptionParser()
 parser.add_option('-R', '--record', type='string', dest='record_to_update', help='The A record to update.')
@@ -26,15 +27,52 @@ if options.verbose:
         level=logging.INFO,
     )
 
-# get external ip
-resolver = dns.resolver.Resolver()
-resolver.nameservers=[socket.gethostbyname('resolver1.opendns.com')]
-for rdata in resolver.query('myip.opendns.com', 'A') :
-    current_ip = str(rdata)
-    logging.info('Current IP address: %s', current_ip)
+def ip_with_dns():
+    dns = (
+        ('resolver1.opendns.com', 'myip.opendns.com'),
+        ('ns1.google.com', 'o-o.myaddr.l.google.com')
+    )
+    for (nameserver, domain) in dns:
+        try:
+            resolver = dns.resolver.Resolver()
+            resolver.nameservers=[socket.gethostbyname(nameserver)]
+            rdata = resolver.query(domain, 'A')[0]
+            ip = str(rdata)
+            return ip
+        except:
+            continue
 
+def ip_with_http():
+    check_ips = ('http://ipecho.net/plain',
+                 'http://v4.ident.me',
+                 'http://ipinfo.io/ip')
+    for url in check_ips:
+        try:
+            with contextlib.closing(urllib2.urlopen(url, timeout=3)) as req:
+                ip = req.read().strip()
+                try:
+                    socket.inet_aton(ip)
+                except:
+                    continue
+            return ip
+        except (urllib2.HTTPError,
+                urllib2.URLError,
+                socket.timeout):
+            continue
+
+def get_ip():
+    ip = ip_with_dns()
+    if ip is None:
+        ip = ip_with_http()
+    if ip is None:
+        raise Exception("Can't get the current ip")
+    return ip
+
+
+current_ip = get_ip()
 record_to_update = options.record_to_update
 zone_to_update = '.'.join(record_to_update.split('.')[-2:])
+logging.info('Current IP address: %s', current_ip)
 
 try:
     socket.inet_aton(current_ip)

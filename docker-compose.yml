@@ -1,10 +1,13 @@
-route53:
-    image: bshaw/route53-dyndns
-    container_name: route53
+version: "2.4"
+services:
+  route53:
+    build:
+        context: .
+        dockerfile: Dockerfile
     restart: always
     environment:
-        - AWS_ACCESS_KEY_ID=
-        - AWS_SECRET_ACCESS_KEY=
-        - AWS_CONNECTION_REGION=eu-west-1
-        - ROUTE53_DOMAIN_A_RECORD=
-        - ROUTE53_UPDATE_FREQUENCY=10800
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - ROUTE53_DOMAIN_A_RECORD
+      - AWS_CONNECTION_REGION=us-east-1
+      - ROUTE53_UPDATE_FREQUENCY=60
