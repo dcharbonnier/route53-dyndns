@@ -71,7 +71,7 @@ def get_ip():
 
 current_ip = get_ip()
 record_to_update = options.record_to_update
-zone_to_update = '.'.join(record_to_update.split('.')[-2:])
+zone_to_update = os.getenv('AWS_ZONE', '.'.join(record_to_update.split('.')[-2:]))
 logging.info('Current IP address: %s', current_ip)
 
 try:
